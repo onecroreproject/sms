@@ -1,0 +1,131 @@
+/* Global Premium Compact Design System */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    --indigo: #4f46e5;
+    --indigo-soft: rgba(79, 70, 229, 0.08);
+    --emerald: #10b981;
+    --emerald-soft: rgba(16, 185, 129, 0.08);
+    --slate-50: #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-300: #cbd5e1;
+    --slate-600: #475569;
+    --slate-700: #334155;
+    --slate-800: #1e293b;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: var(--slate-50);
+    color: var(--slate-800);
+    font-size: 0.875rem; /* Compact base font */
+    line-height: 1.5;
+}
+
+/* Navbar: Compact & Clean */
+.navbar {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--slate-200);
+    padding: 0.5rem 0;
+}
+
+.brand-text {
+    font-weight: 800;
+    font-size: 1.15rem;
+    letter-spacing: -0.03em;
+    color: var(--indigo);
+}
+
+/* Card Styling: Elegant & Compact */
+.card {
+    border: 1px solid var(--slate-200);
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    transition: all 0.2s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.stat-card {
+    padding: 0;
+}
+
+.stat-card .card-body {
+    padding: 1.25rem !important;
+}
+
+/* Compact Forms */
+.form-control, .form-select {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--slate-200);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--indigo);
+    box-shadow: 0 0 0 3px var(--indigo-soft);
+}
+
+.btn {
+    padding: 0.45rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+}
+
+.btn-sm {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+}
+
+/* Table: Polished & Tight */
+.custom-table thead th {
+    background-color: var(--slate-50);
+    color: var(--slate-600);
+    font-weight: 700;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.75rem 1rem;
+    border-bottom: 2px solid var(--slate-100);
+}
+
+.custom-table tbody td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--slate-100);
+}
+
+/* Avatars & Icons */
+.avatar-box {
+    width: 32px;
+    height: 32px;
+    font-size: 0.875rem;
+}
+
+.icon-box {
+    width: 32px;
+    height: 32px;
+}
+
+/* Modals: Balanced size */
+.modal-content {
+    border-radius: 1rem;
+    border: none;
+}
+
+.modal-header { padding: 1.5rem 1.5rem 0.5rem; }
+.modal-body { padding: 1.5rem; }
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .custom-table tbody td::before {
+        font-size: 0.65rem;
+    }
+}
