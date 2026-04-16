@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Q, Case, When, Value, IntegerField
 from django.core.paginator import Paginator
 from django.utils import timezone
 from django.http import HttpResponse
@@ -19,14 +19,21 @@ def dashboard(request):
     # Search functionality
     search_query = request.GET.get('search')
     if search_query:
-        queryset = queryset.filter(
-            Q(name__icontains=search_query) |
-            Q(mobile__icontains=search_query) |
-            Q(whatsapp__icontains=search_query) |
-            Q(degree__icontains=search_query) |
-            Q(department__icontains=search_query) |
-            Q(passed_out_year__icontains=search_query)
-        )
+        # Prioritize results: 
+        # 1. Name matches (Score 3)
+        # 2. Contact matches (Score 2)
+        # 3. Other matches (Score 1)
+        queryset = queryset.annotate(
+            search_priority=Case(
+                When(name__icontains=search_query, then=Value(3)),
+                When(Q(mobile__icontains=search_query) | Q(whatsapp__icontains=search_query), then=Value(2)),
+                When(Q(degree__icontains=search_query) | Q(department__icontains=search_query) | Q(passed_out_year__icontains=search_query), then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+        ).filter(search_priority__gt=0).order_by('-search_priority', '-created_at')
+    else:
+        queryset = queryset.order_by('-created_at')
 
     # Filter functionality
     degree_filter = request.GET.get('degree')
@@ -119,18 +126,16 @@ def student_update(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, 'Student updated successfully!')
-            return redirect('dashboard')
-    else:
-        form = StudentForm(instance=student)
-    return render(request, 'students/student_form.html', {'form': form, 'title': 'Update Student', 'is_update': True})
+        else:
+            messages.error(request, 'Error updating student. Please check the fields.')
+    return redirect('dashboard')
 
 def student_delete(request, pk):
     student = get_object_or_404(Student, pk=pk)
     if request.method == 'POST':
         student.delete()
         messages.success(request, 'Student record deleted successfully!')
-        return redirect('dashboard')
-    return render(request, 'students/student_delete.html', {'student': student})
+    return redirect('dashboard')
 
 def import_students(request):
     if request.method == 'POST' and request.FILES.get('excel_file'):

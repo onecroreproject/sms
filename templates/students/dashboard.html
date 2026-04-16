@@ -54,7 +54,7 @@
                 <label class="form-label fw-bold text-muted x-small mb-1">QUICK SEARCH</label>
                 <div class="input-group input-group-sm">
                     <span class="input-group-text bg-light border-0"><i class="fas fa-search text-muted"></i></span>
-                    <input type="text" name="search" class="form-control bg-light border-0" placeholder="Search by name, contact..." value="{{ search_query|default:'' }}">
+                    <input type="text" name="search" id="searchInput" class="form-control bg-light border-0" placeholder="Search by name, contact..." value="{{ search_query|default:'' }}">
                 </div>
             </div>
             <div class="col-4 col-lg-2">
@@ -127,7 +127,7 @@
                     <th class="text-end pe-4">Actions</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="studentTableBody">
                 {% for student in students %}
                 <tr>
                     <td class="ps-4"><span class="text-muted x-small">#{{ student.id }}</span></td>
@@ -152,12 +152,19 @@
                     <td class="text-center font-weight-bold">{{ student.passed_out_year }}</td>
                     <td class="text-end pe-4">
                         <div class="btn-group btn-group-sm border rounded">
-                            <a href="{% url 'student_edit' student.pk %}" class="btn btn-white border-0 text-indigo py-1 px-2" title="Edit">
+                            <button type="button" class="btn btn-white border-0 text-indigo py-1 px-2 edit-btn" 
+                                    data-bs-toggle="modal" data-bs-target="#editStudentModal"
+                                    data-id="{{ student.id }}" data-name="{{ student.name }}" 
+                                    data-mobile="{{ student.mobile }}" data-whatsapp="{{ student.whatsapp }}"
+                                    data-degree="{{ student.degree }}" data-department="{{ student.department }}"
+                                    data-year="{{ student.passed_out_year }}">
                                 <i class="fas fa-edit"></i>
-                            </a>
-                            <a href="{% url 'student_delete' student.pk %}" class="btn btn-white border-0 text-danger py-1 px-2" title="Delete">
+                            </button>
+                            <button type="button" class="btn btn-white border-0 text-danger py-1 px-2 delete-btn"
+                                    data-bs-toggle="modal" data-bs-target="#deleteStudentModal"
+                                    data-id="{{ student.id }}" data-name="{{ student.name }}">
                                 <i class="fas fa-trash-alt"></i>
-                            </a>
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -166,25 +173,27 @@
         </table>
     </div>
     
-    {% if students.has_other_pages %}
-    <div class="card-footer bg-white py-3 px-4 border-top">
-        <nav>
-            <ul class="pagination pagination-sm justify-content-center mb-0 gap-1">
-                {% if students.has_previous %}
-                    <li class="page-item"><a class="page-link border-0 rounded" href="?page={{ students.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_degree %}&degree={{ selected_degree }}{% endif %}{% if selected_dept %}&department={{ selected_dept }}{% endif %}{% if selected_year %}&year={{ selected_year }}{% endif %}"><i class="fas fa-chevron-left"></i></a></li>
-                {% endif %}
-                {% for i in students.paginator.page_range %}
-                    <li class="page-item {% if students.number == i %}active{% endif %}">
-                        <a class="page-link border-0 rounded" href="?page={{ i }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_degree %}&degree={{ selected_degree }}{% endif %}{% if selected_dept %}&department={{ selected_dept }}{% endif %}{% if selected_year %}&year={{ selected_year }}{% endif %}">{{ i }}</a>
-                    </li>
-                {% endfor %}
-                {% if students.has_next %}
-                    <li class="page-item"><a class="page-link border-0 rounded" href="?page={{ students.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_degree %}&degree={{ selected_degree }}{% endif %}{% if selected_dept %}&department={{ selected_dept }}{% endif %}{% if selected_year %}&year={{ selected_year }}{% endif %}"><i class="fas fa-chevron-right"></i></a></li>
-                {% endif %}
-            </ul>
-        </nav>
+    <div id="paginationWrapper">
+        {% if students.has_other_pages %}
+        <div id="paginationContainer" class="card-footer bg-white py-3 px-4 border-top">
+            <nav>
+                <ul class="pagination pagination-sm justify-content-center mb-0 gap-1">
+                    {% if students.has_previous %}
+                        <li class="page-item"><a class="page-link border-0 rounded" href="?page={{ students.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_degree %}&degree={{ selected_degree }}{% endif %}{% if selected_dept %}&department={{ selected_dept }}{% endif %}{% if selected_year %}&year={{ selected_year }}{% endif %}"><i class="fas fa-chevron-left"></i></a></li>
+                    {% endif %}
+                    {% for i in students.paginator.page_range %}
+                        <li class="page-item {% if students.number == i %}active{% endif %}">
+                            <a class="page-link border-0 rounded" href="?page={{ i }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_degree %}&degree={{ selected_degree }}{% endif %}{% if selected_dept %}&department={{ selected_dept }}{% endif %}{% if selected_year %}&year={{ selected_year }}{% endif %}">{{ i }}</a>
+                        </li>
+                    {% endfor %}
+                    {% if students.has_next %}
+                        <li class="page-item"><a class="page-link border-0 rounded" href="?page={{ students.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_degree %}&degree={{ selected_degree }}{% endif %}{% if selected_dept %}&department={{ selected_dept }}{% endif %}{% if selected_year %}&year={{ selected_year }}{% endif %}"><i class="fas fa-chevron-right"></i></a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
 </div>
 
 <!-- Modal: Add Student (Compact) -->
@@ -221,6 +230,75 @@
     </div>
 </div>
 
+<!-- Modal: Edit Student -->
+<div class="modal fade" id="editStudentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="fas fa-edit text-indigo me-2"></i> Update Student Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editStudentForm" method="post" action="" novalidate>
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted x-small mb-1">FULL NAME</label>
+                            <input type="text" name="name" id="edit_name" class="form-control form-control-sm border-0 bg-light" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted x-small mb-1">MOBILE</label>
+                            <input type="text" name="mobile" id="edit_mobile" class="form-control form-control-sm border-0 bg-light" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted x-small mb-1">WHATSAPP</label>
+                            <input type="text" name="whatsapp" id="edit_whatsapp" class="form-control form-control-sm border-0 bg-light" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted x-small mb-1">DEGREE</label>
+                            <input type="text" name="degree" id="edit_degree" class="form-control form-control-sm border-0 bg-light" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted x-small mb-1">DEPARTMENT</label>
+                            <input type="text" name="department" id="edit_department" class="form-control form-control-sm border-0 bg-light" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted x-small mb-1">PASS OUT YEAR</label>
+                            <input type="number" name="passed_out_year" id="edit_year" class="form-control form-control-sm border-0 bg-light" required>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-2 d-flex gap-2">
+                        <button type="button" class="btn btn-light flex-grow-1 py-2" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-indigo flex-grow-1 py-2">Update Record</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Delete Student -->
+<div class="modal fade" id="deleteStudentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-body p-4 text-center">
+                <div class="text-danger mb-3">
+                    <i class="fas fa-exclamation-triangle fa-3x"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Delete student record?</h5>
+                <p class="text-muted small mb-4">You are about to delete <span id="delete_student_name" class="fw-bold text-dark"></span>'s record. This action cannot be reversed.</p>
+                
+                <form id="deleteStudentForm" method="post" action="">
+                    {% csrf_token %}
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-light flex-grow-1 py-2" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger flex-grow-1 py-2 fw-bold">Delete Permanently</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 <!-- Modal: Import Student -->
 <div class="modal fade" id="importStudentModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -256,6 +334,70 @@
         const inputs = document.querySelectorAll('.modal-body input, .modal-body select');
         inputs.forEach(input => {
             input.classList.add('form-control-sm');
+        });
+
+        // Real-time Search Logic
+        const searchInput = document.getElementById('searchInput');
+        const tableBody = document.getElementById('studentTableBody');
+        const paginationWrapper = document.getElementById('paginationWrapper');
+        
+        let timeout = null;
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                const query = searchInput.value;
+                const url = new URL(window.location.href);
+                url.searchParams.set('search', query);
+                url.searchParams.set('page', 1);
+
+                fetch(url)
+                    .then(response => response.text())
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        
+                        // Update Table
+                        const newTableBody = doc.getElementById('studentTableBody');
+                        if (newTableBody) {
+                            tableBody.innerHTML = newTableBody.innerHTML;
+                        }
+
+                        // Update Pagination
+                        const newPaginationWrapper = doc.getElementById('paginationWrapper');
+                        if (paginationWrapper && newPaginationWrapper) {
+                            paginationWrapper.innerHTML = newPaginationWrapper.innerHTML;
+                        }
+                    })
+                    .catch(err => console.error('Search error:', err));
+            }, 300);
+        });
+
+        // Event Delegation for Edit and Delete buttons
+        document.addEventListener('click', function(e) {
+            // Find the closest button if the click was on an icon
+            const editBtn = e.target.closest('.edit-btn');
+            const deleteBtn = e.target.closest('.delete-btn');
+
+            if (editBtn) {
+                const id = editBtn.dataset.id;
+                const form = document.getElementById('editStudentForm');
+                form.action = `/edit/${id}/`;
+                
+                document.getElementById('edit_name').value = editBtn.dataset.name;
+                document.getElementById('edit_mobile').value = editBtn.dataset.mobile;
+                document.getElementById('edit_whatsapp').value = editBtn.dataset.whatsapp;
+                document.getElementById('edit_degree').value = editBtn.dataset.degree;
+                document.getElementById('edit_department').value = editBtn.dataset.department;
+                document.getElementById('edit_year').value = editBtn.dataset.year;
+            }
+
+            if (deleteBtn) {
+                const id = deleteBtn.dataset.id;
+                const form = document.getElementById('deleteStudentForm');
+                form.action = `/delete/${id}/`;
+                document.getElementById('delete_student_name').innerText = deleteBtn.dataset.name;
+            }
         });
     });
 </script>
