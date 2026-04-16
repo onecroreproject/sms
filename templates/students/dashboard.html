@@ -29,7 +29,7 @@
         <div class="card stat-card shadow-sm h-100 border-0 bg-white">
             <div class="card-body">
                 <div class="d-flex align-items-center mb-2">
-                    <div class="icon-box bg-emerald-soft text-emerald rounded-circle me-3 d-flex align-items-center justify-content-center">
+                    <div class="icon-box bg-success-soft text-success rounded-circle me-3 d-flex align-items-center justify-content-center">
                         <i class="fas fa-plus-circle"></i>
                     </div>
                     <h6 class="text-muted fw-bold text-uppercase small tracking-wider mb-0">Added Today</h6>
@@ -40,7 +40,7 @@
                 </div>
             </div>
             <div class="progress rounded-0" style="height: 3px;">
-                <div class="progress-bar bg-emerald" style="width: {% if total_students > 0 %}{% widthratio today_added total_students 100 %}{% else %}0{% endif %}%"></div>
+                <div class="progress-bar bg-success" style="width: {% if total_students > 0 %}{% widthratio today_added total_students 100 %}{% else %}0{% endif %}%"></div>
             </div>
         </div>
     </div>
@@ -97,9 +97,9 @@
     <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
         <h6 class="mb-0 fw-bold text-dark">Student Directory</h6>
         <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#importStudentModal">
+            <a href="{% url 'import_students' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
                 <i class="fas fa-file-import me-1"></i> Import
-            </button>
+            </a>
             <div class="dropdown">
                 <button class="btn btn-light btn-sm rounded-pill px-3 dropdown-toggle border" type="button" data-bs-toggle="dropdown">
                     <i class="fas fa-file-export me-1"></i> Export
@@ -129,7 +129,7 @@
             <tbody id="studentTableBody">
                 {% for student in students %}
                 <tr>
-                    <td class="ps-4"><span class="text-muted fw-bold x-small">{{ forloop.counter }}</span></td>
+                    <td class="ps-4"><span class="text-muted fw-bold x-small">{{ students.start_index|add:forloop.counter0 }}</span></td>
                     <td>
                         <div class="d-flex align-items-center">
                             <div class="avatar-box me-3">
@@ -306,30 +306,6 @@
         </div>
     </div>
 
-<!-- Modal: Import Student -->
-<div class="modal fade" id="importStudentModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content shadow-lg">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold"><i class="fas fa-file-upload text-primary me-2"></i> Bulk Import</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form method="post" action="{% url 'import_students' %}" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label class="form-label fw-bold x-small text-muted">SELECT EXCEL FILE</label>
-                        <input type="file" name="excel_file" class="form-control" accept=".xlsx, .xls" required>
-                        <div class="form-text x-small mt-2">
-                            <i class="fas fa-info-circle me-1"></i> <strong>Excel Columns:</strong> Name, Email, Mobile, WhatsApp, Degree, Dept, Year
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100 py-2">Upload & Process</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block scripts %}

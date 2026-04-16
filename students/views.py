@@ -141,57 +141,91 @@ def student_delete(request, pk):
     return redirect('dashboard')
 
 def import_students(request):
-    if request.method == 'POST' and request.FILES.get('excel_file'):
-        excel_file = request.FILES['excel_file']
+    if request.method == 'GET':
+        return render(request, 'students/import_students.html')
         
-        if not excel_file.name.endswith(('.xlsx', '.xls')):
-            messages.error(request, 'Please upload a valid Excel file (.xlsx or .xls)')
-            return redirect('dashboard')
+    try:
+        if request.method == 'POST':
+            excel_file = request.FILES.get('excel_file')
+            if not excel_file:
+                messages.warning(request, 'No file was uploaded.')
+                return redirect('dashboard')
+            
+            if not excel_file.name.endswith(('.xlsx', '.xls')):
+                messages.error(request, 'Please upload a valid Excel file (.xlsx or .xls)')
+                return redirect('dashboard')
 
-        try:
             wb = openpyxl.load_workbook(excel_file)
             sheet = wb.active
             
-            # Skip header row
+            # Get header row safely
+            rows_iter = sheet.iter_rows(min_row=1, max_row=1)
+            try:
+                header_row_cells = next(rows_iter)
+                header_row = [str(cell.value).strip().lower() for cell in header_row_cells if cell.value]
+            except StopIteration:
+                messages.error(request, 'The Excel file appears to be empty.')
+                return redirect('dashboard')
+            
+            def get_idx(name):
+                try: return header_row.index(name.lower())
+                except: return -1
+
+            idx_name = get_idx('name')
+            idx_email = get_idx('email')
+            idx_mobile = get_idx('mobile')
+            idx_whatsapp = get_idx('whatsapp')
+            idx_degree = get_idx('degree')
+            idx_dept = get_idx('dept') or get_idx('department')
+            idx_year = get_idx('year') or get_idx('passed out year')
+
             count = 0
             errors = []
             
             for index, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
-                if not row[0]: continue 
-                
-                # Expected: Name, Email, Mobile, WhatsApp, Degree, Dept, Year
-                name, email, mobile, whatsapp, degree, department, passed_out_year = row[:7]
-                
-                # Validation
-                if Student.objects.filter(email=email).exists():
-                    errors.append(f"Row {index}: Email {email} already exists.")
-                    continue
-                if Student.objects.filter(mobile=mobile).exists():
-                    errors.append(f"Row {index}: Mobile {mobile} already exists.")
-                    continue
+                if not any(row): continue 
                 
                 try:
+                    name = str(row[idx_name]) if idx_name != -1 and row[idx_name] else ""
+                    email = str(row[idx_email]) if idx_email != -1 and row[idx_email] else ""
+                    mobile = str(row[idx_mobile]) if idx_mobile != -1 and row[idx_mobile] else ""
+                    whatsapp = str(row[idx_whatsapp]) if idx_whatsapp != -1 and row[idx_whatsapp] else ""
+                    degree = str(row[idx_degree]) if idx_degree != -1 and row[idx_degree] else ""
+                    department = str(row[idx_dept]) if idx_dept != -1 and row[idx_dept] else ""
+                    year = row[idx_year] if idx_year != -1 and row[idx_year] else 0
+                    
+                    if not name or not email:
+                        errors.append(f"Row {index}: Missing Name or Email.")
+                        continue
+
+                    if Student.objects.filter(email=email).exists():
+                        errors.append(f"Row {index}: Email {email} already exists.")
+                        continue
+                    if Student.objects.filter(mobile=mobile).exists():
+                        errors.append(f"Row {index}: Mobile {mobile} already exists.")
+                        continue
+                    
                     Student.objects.create(
                         name=name,
                         email=email,
-                        mobile=str(mobile),
-                        whatsapp=str(whatsapp),
+                        mobile=mobile,
+                        whatsapp=whatsapp,
                         degree=degree,
                         department=department,
-                        passed_out_year=int(passed_out_year) if passed_out_year else 0
+                        passed_out_year=int(year) if year else 0
                     )
                     count += 1
-                except Exception as e:
-                    errors.append(f"Row {index} ({name}): {str(e)}")
+                except Exception as row_error:
+                    errors.append(f"Row {index}: {str(row_error)}")
 
             if count > 0:
                 messages.success(request, f'Successfully imported {count} students.')
             if errors:
-                for err in errors[:5]: # Show first 5 errors
+                for err in errors[:5]:
                     messages.warning(request, err)
                     
-        except Exception as e:
-            messages.error(request, f'Error processing file: {str(e)}')
+    except Exception as e:
+        messages.error(request, f'Critical error processing file: {str(e)}')
             
     return redirect('dashboard')
 
@@ -235,14 +269,17 @@ def export_students_pdf(request):
     for s in students:
         data.append([s.name, s.email, s.mobile, s.whatsapp, s.degree, s.department, str(s.passed_out_year)])
         
-    table = Table(data, hAlign='LEFT', colWidths=[150, 100, 100, 100, 100, 70])
+    # Adjust colWidths for 7 columns to fit properly on landscape page
+    table = Table(data, hAlign='LEFT', colWidths=[130, 160, 90, 90, 80, 80, 60])
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3b82f6')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 10),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('LEFTPADDING', (0, 0), (-1, -1), 10),
         ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f8fafc')),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0'))
     ]))

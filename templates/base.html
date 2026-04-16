@@ -42,10 +42,10 @@
     <div class="container py-4">
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible animate__animated animate__fadeInDown show border-0 shadow-sm rounded-3 mb-4" role="alert">
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'warning' %}warning{% else %}success{% endif %} alert-dismissible animate__animated animate__fadeInDown show border-0 shadow-sm rounded-3 mb-4" role="alert">
                     <div class="d-flex align-items-center">
-                        <div class="icon-indicator bg-{{ message.tags }} text-white rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
-                            <i class="fas {% if message.tags == 'success' %}fa-check{% else %}fa-info{% endif %} x-small"></i>
+                        <div class="icon-indicator bg-{% if message.tags == 'error' %}danger{% elif message.tags == 'warning' %}warning{% else %}success{% endif %} text-white rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                            <i class="fas {% if message.tags == 'success' %}fa-check{% elif message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-times{% endif %} x-small"></i>
                         </div>
                         <div class="fw-bold small">{{ message }}</div>
                     </div>
