@@ -3,6 +3,7 @@ from django.utils import timezone
 
 class Student(models.Model):
     name = models.CharField(max_length=255)
+    email = models.EmailField(unique=True)
     mobile = models.CharField(max_length=15, unique=True)
     whatsapp = models.CharField(max_length=15, unique=True)
     degree = models.CharField(max_length=100)

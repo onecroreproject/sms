@@ -119,30 +119,32 @@
         <table class="table table-hover align-middle mb-0 custom-table">
             <thead>
                 <tr>
-                    <th class="ps-4">#</th>
-                    <th>Full Name</th>
-                    <th>Contacts</th>
-                    <th>Academic</th>
-                    <th class="text-center">Year</th>
-                    <th class="text-end pe-4">Actions</th>
+                    <th class="ps-4">S.No</th>
+                    <th>Student Information</th>
+                    <th>Academic Details</th>
+                    <th class="text-center">Pass Year</th>
+                    <th class="text-end pe-4">Manage</th>
                 </tr>
             </thead>
             <tbody id="studentTableBody">
                 {% for student in students %}
                 <tr>
-                    <td class="ps-4"><span class="text-muted x-small">#{{ student.id }}</span></td>
+                    <td class="ps-4"><span class="text-muted fw-bold x-small">{{ forloop.counter }}</span></td>
                     <td>
                         <div class="d-flex align-items-center">
                             <div class="avatar-box me-3">
                                 {{ student.name|slice:":1"|upper }}
                             </div>
-                            <span class="fw-semibold text-dark">{{ student.name }}</span>
+                            <div>
+                                <div class="fw-bold text-dark mb-0">{{ student.name }}</div>
+                                <div class="x-small text-muted">{{ student.email|default:"No Email" }}</div>
+                            </div>
                         </div>
                     </td>
                     <td>
                         <div class="x-small">
-                            <i class="fas fa-phone-alt text-muted me-1"></i> {{ student.mobile }}<br>
-                            <span class="text-emerald fw-medium"><i class="fab fa-whatsapp me-1"></i> {{ student.whatsapp }}</span>
+                            <div class="mb-1"><i class="fas fa-phone-alt text-primary me-1"></i> {{ student.mobile }}</div>
+                            <div class="text-success"><i class="fab fa-whatsapp me-1"></i> {{ student.whatsapp }}</div>
                         </div>
                     </td>
                     <td>
@@ -152,9 +154,10 @@
                     <td class="text-center font-weight-bold">{{ student.passed_out_year }}</td>
                     <td class="text-end pe-4">
                         <div class="btn-group btn-group-sm border rounded">
-                            <button type="button" class="btn btn-white border-0 text-indigo py-1 px-2 edit-btn" 
+                            <button type="button" class="btn btn-white border-0 text-primary py-1 px-2 edit-btn" 
                                     data-bs-toggle="modal" data-bs-target="#editStudentModal"
                                     data-id="{{ student.id }}" data-name="{{ student.name }}" 
+                                    data-email="{{ student.email }}"
                                     data-mobile="{{ student.mobile }}" data-whatsapp="{{ student.whatsapp }}"
                                     data-degree="{{ student.degree }}" data-department="{{ student.department }}"
                                     data-year="{{ student.passed_out_year }}">
@@ -201,7 +204,7 @@
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content shadow-lg">
             <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold"><i class="fas fa-user-plus text-indigo me-2"></i> Register Student</h5>
+                <h5 class="modal-title fw-bold"><i class="fas fa-user-plus text-primary me-2"></i> Register Student</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -245,6 +248,10 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-muted x-small mb-1">FULL NAME</label>
                             <input type="text" name="name" id="edit_name" class="form-control form-control-sm border-0 bg-light" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted x-small mb-1">EMAIL ADDRESS</label>
+                            <input type="email" name="email" id="edit_email" class="form-control form-control-sm border-0 bg-light" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-muted x-small mb-1">MOBILE</label>
@@ -313,6 +320,9 @@
                     <div class="mb-3">
                         <label class="form-label fw-bold x-small text-muted">SELECT EXCEL FILE</label>
                         <input type="file" name="excel_file" class="form-control" accept=".xlsx, .xls" required>
+                        <div class="form-text x-small mt-2">
+                            <i class="fas fa-info-circle me-1"></i> <strong>Excel Columns:</strong> Name, Email, Mobile, WhatsApp, Degree, Dept, Year
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary w-100 py-2">Upload & Process</button>
                 </form>
@@ -373,9 +383,44 @@
             }, 300);
         });
 
+        // AJAX submission for Edit Form
+        const editForm = document.getElementById('editStudentForm');
+        editForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(editForm);
+            
+            fetch(editForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.reload();
+                } else {
+                    // Clear existing errors
+                    document.querySelectorAll('.edit-error').forEach(el => el.remove());
+                    
+                    // Show new errors
+                    for (const [field, error] of Object.entries(data.errors)) {
+                        const input = document.getElementsByName(field)[1]; // Get index 1 because index 0 is in the Add modal
+                        if (input) {
+                            const errorDiv = document.createElement('div');
+                            errorDiv.className = 'text-danger x-small edit-error mt-1';
+                            errorDiv.innerHTML = `<i class="fas fa-info-circle me-1"></i> ${error}`;
+                            input.parentNode.appendChild(errorDiv);
+                        }
+                    }
+                }
+            })
+            .catch(err => console.error('Update error:', err));
+        });
+
         // Event Delegation for Edit and Delete buttons
         document.addEventListener('click', function(e) {
-            // Find the closest button if the click was on an icon
             const editBtn = e.target.closest('.edit-btn');
             const deleteBtn = e.target.closest('.delete-btn');
 
@@ -384,7 +429,11 @@
                 const form = document.getElementById('editStudentForm');
                 form.action = `/edit/${id}/`;
                 
+                // Clear previous errors
+                document.querySelectorAll('.edit-error').forEach(el => el.remove());
+
                 document.getElementById('edit_name').value = editBtn.dataset.name;
+                document.getElementById('edit_email').value = editBtn.dataset.email;
                 document.getElementById('edit_mobile').value = editBtn.dataset.mobile;
                 document.getElementById('edit_whatsapp').value = editBtn.dataset.whatsapp;
                 document.getElementById('edit_degree').value = editBtn.dataset.degree;

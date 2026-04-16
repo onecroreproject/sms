@@ -119,15 +119,18 @@ def render_dashboard_with_errors(request, invalid_form):
     }
     return render(request, 'students/dashboard.html', context)
 
+from django.http import JsonResponse
+
 def student_update(request, pk):
     student = get_object_or_404(Student, pk=pk)
     if request.method == 'POST':
         form = StudentForm(request.POST, instance=student)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Student updated successfully!')
+            return JsonResponse({'status': 'success', 'message': 'Student updated successfully!'})
         else:
-            messages.error(request, 'Error updating student. Please check the fields.')
+            errors = {field: error[0] for field, error in form.errors.items()}
+            return JsonResponse({'status': 'error', 'errors': errors})
     return redirect('dashboard')
 
 def student_delete(request, pk):
@@ -153,31 +156,33 @@ def import_students(request):
             count = 0
             errors = []
             
-            for row in sheet.iter_rows(min_row=2, values_only=True):
-                if not row[0]: continue # Skip empty rows
+            for index, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
+                if not row[0]: continue 
                 
-                name, mobile, whatsapp, degree, department, passed_out_year = row[:6]
+                # Expected: Name, Email, Mobile, WhatsApp, Degree, Dept, Year
+                name, email, mobile, whatsapp, degree, department, passed_out_year = row[:7]
                 
                 # Validation
-                if Student.objects.filter(mobile=mobile).exists():
-                    errors.append(f"Row {sheet.max_row}: Mobile {mobile} already exists.")
+                if Student.objects.filter(email=email).exists():
+                    errors.append(f"Row {index}: Email {email} already exists.")
                     continue
-                if Student.objects.filter(whatsapp=whatsapp).exists():
-                    errors.append(f"Row {sheet.max_row}: WhatsApp {whatsapp} already exists.")
+                if Student.objects.filter(mobile=mobile).exists():
+                    errors.append(f"Row {index}: Mobile {mobile} already exists.")
                     continue
                 
                 try:
                     Student.objects.create(
                         name=name,
+                        email=email,
                         mobile=str(mobile),
                         whatsapp=str(whatsapp),
                         degree=degree,
                         department=department,
-                        passed_out_year=int(passed_out_year)
+                        passed_out_year=int(passed_out_year) if passed_out_year else 0
                     )
                     count += 1
                 except Exception as e:
-                    errors.append(f"Error in row with {name}: {str(e)}")
+                    errors.append(f"Row {index} ({name}): {str(e)}")
 
             if count > 0:
                 messages.success(request, f'Successfully imported {count} students.')
@@ -199,7 +204,7 @@ def export_students_excel(request):
     ws.title = "Students"
     
     # Header
-    columns = ['Name', 'Mobile', 'WhatsApp', 'Degree', 'Department', 'Passed Out Year']
+    columns = ['Name', 'Email', 'Mobile', 'WhatsApp', 'Degree', 'Department', 'Passed Out Year']
     ws.append(columns)
     
     # Data
@@ -207,6 +212,7 @@ def export_students_excel(request):
     for student in students:
         ws.append([
             student.name,
+            student.email,
             student.mobile,
             student.whatsapp,
             student.degree,
@@ -224,10 +230,10 @@ def export_students_pdf(request):
     doc = SimpleDocTemplate(response, pagesize=landscape(letter))
     elements = []
     
-    data = [['NAME', 'MOBILE', 'WHATSAPP', 'DEGREE', 'DEPT', 'YEAR']]
+    data = [['NAME', 'EMAIL', 'MOBILE', 'WHATSAPP', 'DEGREE', 'DEPT', 'YEAR']]
     students = Student.objects.all()
     for s in students:
-        data.append([s.name, s.mobile, s.whatsapp, s.degree, s.department, str(s.passed_out_year)])
+        data.append([s.name, s.email, s.mobile, s.whatsapp, s.degree, s.department, str(s.passed_out_year)])
         
     table = Table(data, hAlign='LEFT', colWidths=[150, 100, 100, 100, 100, 70])
     table.setStyle(TableStyle([

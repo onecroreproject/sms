@@ -6,15 +6,23 @@ import re
 class StudentForm(forms.ModelForm):
     class Meta:
         model = Student
-        fields = ['name', 'mobile', 'whatsapp', 'degree', 'department', 'passed_out_year']
+        fields = ['name', 'email', 'mobile', 'whatsapp', 'degree', 'department', 'passed_out_year']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Full Name'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Enter Email Address'}),
             'mobile': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Mobile Number'}),
             'whatsapp': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter WhatsApp Number'}),
             'degree': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Degree (e.g. B.E)'}),
             'department': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Department (e.g. CSE)'}),
             'passed_out_year': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter Passing Year'}),
         }
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        instance = getattr(self, 'instance', None)
+        if Student.objects.exclude(pk=instance.pk if instance else None).filter(email=email).exists():
+            raise forms.ValidationError("This email is already registered.")
+        return email
 
     def clean_mobile(self):
         mobile = self.cleaned_data.get('mobile')
