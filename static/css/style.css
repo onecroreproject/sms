@@ -149,21 +149,23 @@ body {
 }
 
 .custom-table tbody td {
-    padding: 1.1rem 1.25rem;
+    padding: 0.75rem 1rem;
     color: var(--text-main);
-    border: 1px solid var(--border-light);
+    border: 1px solid #cbd5e1 !important; /* Prominent Excel-like grid lines */
 }
 
 .custom-table thead th {
-    border: 1px solid var(--border-light);
+    border: 1px solid #cbd5e1 !important;
+    background-color: #f1f5f9 !important;
 }
 
-/* Excel Sheet Style */
+/* Excel Sheet Style Class */
 .excel-mode {
-    border: 1px solid var(--border-medium) !important;
+    border: 1px solid #94a3b8 !important;
+    border-collapse: collapse !important;
 }
 .excel-mode th, .excel-mode td {
-    border: 1px solid var(--border-medium) !important;
+    border: 1px solid #cbd5e1 !important;
 }
 
 /* Avatar Boxes */

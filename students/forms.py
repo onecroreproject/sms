@@ -19,31 +19,18 @@ class StudentForm(forms.ModelForm):
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        instance = getattr(self, 'instance', None)
-        if Student.objects.exclude(pk=instance.pk if instance else None).filter(email=email).exists():
-            raise forms.ValidationError("This email is already registered.")
         return email
 
     def clean_mobile(self):
         mobile = self.cleaned_data.get('mobile')
         if not re.match(r'^\+?1?\d{9,15}$', mobile):
             raise forms.ValidationError("Enter a valid phone number (9-15 digits).")
-        
-        # Check uniqueness manually if instance is not provided (for creation)
-        # Or if the mobile has changed (for update)
-        instance = getattr(self, 'instance', None)
-        if Student.objects.exclude(pk=instance.pk if instance else None).filter(mobile=mobile).exists():
-            raise forms.ValidationError("This mobile number is already registered.")
         return mobile
 
     def clean_whatsapp(self):
         whatsapp = self.cleaned_data.get('whatsapp')
         if not re.match(r'^\+?1?\d{9,15}$', whatsapp):
             raise forms.ValidationError("Enter a valid WhatsApp number (9-15 digits).")
-            
-        instance = getattr(self, 'instance', None)
-        if Student.objects.exclude(pk=instance.pk if instance else None).filter(whatsapp=whatsapp).exists():
-            raise forms.ValidationError("This WhatsApp number is already registered.")
         return whatsapp
 
     def clean_passed_out_year(self):
