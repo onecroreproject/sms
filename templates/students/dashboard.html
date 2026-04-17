@@ -3,7 +3,7 @@
 {% block content %}
 <div class="row g-3 mb-4">
     <!-- Stat Card: Total Students -->
-    <div class="col-12 col-md-6">
+    <div class="col-12 col-md-4">
         <div class="card stat-card shadow-sm h-100 border-0 bg-white">
             <div class="card-body">
                 <div class="d-flex align-items-center mb-2">
@@ -25,7 +25,7 @@
         </div>
     </div>
     <!-- Stat Card: Added Today -->
-    <div class="col-12 col-md-6">
+    <div class="col-12 col-md-4">
         <div class="card stat-card shadow-sm h-100 border-0 bg-white">
             <div class="card-body">
                 <div class="d-flex align-items-center mb-2">
@@ -43,6 +43,30 @@
                 <div class="progress-bar bg-success" style="width: {% if total_students > 0 %}{% widthratio today_added total_students 100 %}{% else %}0{% endif %}%"></div>
             </div>
         </div>
+    </div>
+    <!-- Stat Card: Duplicate Records -->
+    <div class="col-12 col-md-4">
+        <a href="{% url 'duplicates' %}" class="text-decoration-none">
+            <div class="card stat-card shadow-sm h-100 border-0 bg-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="icon-box bg-danger-soft text-danger rounded-circle me-3 d-flex align-items-center justify-content-center">
+                            <i class="fas fa-copy"></i>
+                        </div>
+                        <h6 class="text-muted fw-bold text-uppercase small tracking-wider mb-0">Duplicate Records</h6>
+                    </div>
+                    <div class="d-flex align-items-baseline">
+                        <h3 class="fw-bold text-dark mb-0">{{ duplicate_count }}</h3>
+                        <span class="ms-2 text-danger x-small fw-semibold">
+                            <i class="fas fa-exclamation-circle me-1"></i> Review Required
+                        </span>
+                    </div>
+                </div>
+                <div class="progress rounded-0" style="height: 3px;">
+                    <div class="progress-bar bg-danger" style="width: {% if total_students > 0 %}{% widthratio duplicate_count total_students 100 %}{% else %}0{% endif %}%"></div>
+                </div>
+            </div>
+        </a>
     </div>
 </div>
 
@@ -97,6 +121,9 @@
     <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
         <h6 class="mb-0 fw-bold text-dark">Student Directory</h6>
         <div class="d-flex gap-2">
+            <button type="button" id="bulkDeleteBtn" class="btn btn-danger btn-sm rounded-pill px-3 d-none" onclick="confirmBulkDelete()">
+                <i class="fas fa-trash-alt me-1"></i> Bulk Delete
+            </button>
             <a href="{% url 'import_students' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
                 <i class="fas fa-file-import me-1"></i> Import
             </a>
@@ -115,28 +142,37 @@
         </div>
     </div>
     
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0 custom-table">
-            <thead>
-                <tr>
-                    <th class="ps-4">S.No</th>
-                    <th>Student Information</th>
-                    <th>Academic Details</th>
-                    <th class="text-center">Pass Year</th>
-                    <th class="text-end pe-4">Manage</th>
-                </tr>
-            </thead>
-            <tbody id="studentTableBody">
+    <form id="bulkDeleteForm" method="post" action="{% url 'bulk_delete' %}">
+        {% csrf_token %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 custom-table excel-mode">
+                <thead>
+                    <tr>
+                        <th class="ps-4" style="width: 40px;">
+                            <input type="checkbox" id="selectAll" class="form-check-input">
+                        </th>
+                        <th>S.NO</th>
+                        <th>STUDENT INFORMATION</th>
+                        <th>PHONE</th>
+                        <th>ACADEMIC DETAILS</th>
+                        <th class="text-center">PASS YEAR</th>
+                        <th class="text-end pe-4">MANAGE</th>
+                    </tr>
+                </thead>
+                <tbody id="studentTableBody">
                 {% for student in students %}
                 <tr>
-                    <td class="ps-4"><span class="text-muted fw-bold x-small">{{ students.start_index|add:forloop.counter0 }}</span></td>
+                    <td class="ps-4">
+                        <input type="checkbox" name="student_ids" value="{{ student.id }}" class="form-check-input student-checkbox">
+                    </td>
+                    <td><span class="text-muted fw-bold x-small">{{ students.start_index|add:forloop.counter0 }}</span></td>
                     <td>
                         <div class="d-flex align-items-center">
                             <div class="avatar-box me-3">
                                 {{ student.name|slice:":1"|upper }}
                             </div>
                             <div>
-                                <div class="fw-bold text-dark mb-0">{{ student.name }}</div>
+                                <div class="fw-bold text-dark mb-0 text-uppercase">{{ student.name }}</div>
                                 <div class="x-small text-muted">{{ student.email|default:"No Email" }}</div>
                             </div>
                         </div>
@@ -148,10 +184,10 @@
                         </div>
                     </td>
                     <td>
-                        <span class="badge bg-primary-soft text-primary rounded-pill px-2 py-1 x-small fw-bold">{{ student.degree }}</span>
-                        <div class="x-small text-muted mt-1">{{ student.department }}</div>
+                        <div class="fw-bold text-primary small">{{ student.degree }}</div>
+                        <div class="x-small text-muted">{{ student.department }}</div>
                     </td>
-                    <td class="text-center font-weight-bold">{{ student.passed_out_year }}</td>
+                    <td class="text-center font-weight-bold bg-light">{{ student.passed_out_year }}</td>
                     <td class="text-end pe-4">
                         <div class="btn-group btn-group-sm border rounded">
                             <button type="button" class="btn btn-white border-0 text-primary py-1 px-2 edit-btn" 
@@ -175,6 +211,7 @@
             </tbody>
         </table>
     </div>
+    </form>
     
     <div id="paginationWrapper">
         {% if students.has_other_pages %}
@@ -316,6 +353,45 @@
             addModal.show();
         {% endif %}
         
+        // Select All & Bulk Delete Logic
+        const selectAll = document.getElementById('selectAll');
+        const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+        const bulkForm = document.getElementById('bulkDeleteForm');
+
+        function updateBulkDeleteVisibility() {
+            const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
+            if (checkedBoxes.length > 0) {
+                bulkDeleteBtn.classList.remove('d-none');
+            } else {
+                bulkDeleteBtn.classList.add('d-none');
+            }
+        }
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('.student-checkbox');
+                checkboxes.forEach(cb => cb.checked = selectAll.checked);
+                updateBulkDeleteVisibility();
+            });
+        }
+
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('student-checkbox')) {
+                updateBulkDeleteVisibility();
+                // Update selectAll state
+                const all = document.querySelectorAll('.student-checkbox');
+                const checked = document.querySelectorAll('.student-checkbox:checked');
+                selectAll.checked = (all.length === checked.length);
+            }
+        });
+
+        window.confirmBulkDelete = function() {
+            const count = document.querySelectorAll('.student-checkbox:checked').length;
+            if (confirm(`Are you sure you want to delete ${count} selected records?`)) {
+                bulkForm.submit();
+            }
+        };
+
         // Ensure compact styling for modal inputs
         const inputs = document.querySelectorAll('.modal-body input, .modal-body select');
         inputs.forEach(input => {
@@ -354,6 +430,10 @@
                         if (paginationWrapper && newPaginationWrapper) {
                             paginationWrapper.innerHTML = newPaginationWrapper.innerHTML;
                         }
+
+                        // Reset checkboxes
+                        if (selectAll) selectAll.checked = false;
+                        updateBulkDeleteVisibility();
                     })
                     .catch(err => console.error('Search error:', err));
             }, 300);

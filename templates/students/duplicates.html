@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">Duplicate Records</h4>
+        <p class="text-muted small">Manage records with duplicate email or mobile numbers</p>
+    </div>
+    <a href="{% url 'dashboard' %}" class="btn btn-light btn-sm rounded-pill px-3">
+        <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+    </a>
+</div>
+
+<div class="card border-0 shadow-sm overflow-hidden mb-5">
+    <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
+        <h6 class="mb-0 fw-bold text-dark">Duplicate List</h6>
+        <div class="d-flex gap-2">
+            <button type="button" id="bulkDeleteBtn" class="btn btn-danger btn-sm rounded-pill px-3 d-none" onclick="confirmBulkDelete()">
+                <i class="fas fa-trash-alt me-1"></i> Bulk Delete
+            </button>
+        </div>
+    </div>
+    
+    <form id="bulkDeleteForm" method="post" action="{% url 'bulk_delete' %}">
+        {% csrf_token %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 custom-table excel-mode">
+                <thead>
+                    <tr>
+                        <th class="ps-4" style="width: 40px;">
+                            <input type="checkbox" id="selectAll" class="form-check-input">
+                        </th>
+                        <th>S.NO</th>
+                        <th>STUDENT INFORMATION</th>
+                        <th>PHONE</th>
+                        <th>ACADEMIC DETAILS</th>
+                        <th class="text-center">PASS YEAR</th>
+                        <th class="text-end pe-4">MANAGE</th>
+                    </tr>
+                </thead>
+                <tbody id="studentTableBody">
+                    {% for student in students %}
+                    <tr>
+                        <td class="ps-4">
+                            <input type="checkbox" name="student_ids" value="{{ student.id }}" class="form-check-input student-checkbox">
+                        </td>
+                        <td><span class="text-muted fw-bold x-small">{{ forloop.counter }}</span></td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-box me-3">
+                                    {{ student.name|slice:":1"|upper }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark mb-0 text-uppercase">{{ student.name }}</div>
+                                    <div class="x-small text-muted">{{ student.email|default:"No Email" }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="x-small">
+                                <div class="mb-1"><i class="fas fa-phone-alt text-primary me-1"></i> {{ student.mobile }}</div>
+                                <div class="text-success"><i class="fab fa-whatsapp me-1"></i> {{ student.whatsapp }}</div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-bold text-primary small">{{ student.degree }}</div>
+                            <div class="x-small text-muted">{{ student.department }}</div>
+                        </td>
+                        <td class="text-center font-weight-bold bg-light">{{ student.passed_out_year }}</td>
+                        <td class="text-end pe-4">
+                            <div class="btn-group btn-group-sm border rounded">
+                                <button type="button" class="btn btn-white border-0 text-primary py-1 px-2 edit-btn" 
+                                        data-bs-toggle="modal" data-bs-target="#editStudentModal"
+                                        data-id="{{ student.id }}" data-name="{{ student.name }}" 
+                                        data-email="{{ student.email }}"
+                                        data-mobile="{{ student.mobile }}" data-whatsapp="{{ student.whatsapp }}"
+                                        data-degree="{{ student.degree }}" data-department="{{ student.department }}"
+                                        data-year="{{ student.passed_out_year }}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-white border-0 text-danger py-1 px-2 delete-btn"
+                                        data-bs-toggle="modal" data-bs-target="#deleteStudentModal"
+                                        data-id="{{ student.id }}" data-name="{{ student.name }}">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <i class="fas fa-check-circle text-success fa-3x mb-3"></i>
+                            <h5 class="fw-bold">No duplicates found!</h5>
+                            <p class="text-muted small">All student records are unique.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
+</div>
+
+<!-- Re-use Modals from Dashboard -->
+<!-- Modal: Edit Student -->
+<div class="modal fade" id="editStudentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="fas fa-edit text-primary me-2"></i> Update Student Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editStudentForm" method="post" action="" novalidate>
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted x-small mb-1">FULL NAME</label>
+                            <input type="text" name="name" id="edit_name" class="form-control form-control-sm border-0 bg-light" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted x-small mb-1">EMAIL ADDRESS</label>
+                            <input type="email" name="email" id="edit_email" class="form-control form-control-sm border-0 bg-light" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted x-small mb-1">MOBILE</label>
+                            <input type="text" name="mobile" id="edit_mobile" class="form-control form-control-sm border-0 bg-light" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted x-small mb-1">WHATSAPP</label>
+                            <input type="text" name="whatsapp" id="edit_whatsapp" class="form-control form-control-sm border-0 bg-light" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted x-small mb-1">DEGREE</label>
+                            <input type="text" name="degree" id="edit_degree" class="form-control form-control-sm border-0 bg-light" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted x-small mb-1">DEPARTMENT</label>
+                            <input type="text" name="department" id="edit_department" class="form-control form-control-sm border-0 bg-light" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted x-small mb-1">PASS OUT YEAR</label>
+                            <input type="number" name="passed_out_year" id="edit_year" class="form-control form-control-sm border-0 bg-light" required>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-2 d-flex gap-2">
+                        <button type="button" class="btn btn-light flex-grow-1 py-2" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary flex-grow-1 py-2">Update Record</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Delete Student -->
+<div class="modal fade" id="deleteStudentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-body p-4 text-center">
+                <div class="text-danger mb-3">
+                    <i class="fas fa-exclamation-triangle fa-3x"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Delete student record?</h5>
+                <p class="text-muted small mb-4">You are about to delete <span id="delete_student_name" class="fw-bold text-dark"></span>'s record. This action cannot be reversed.</p>
+                
+                <form id="deleteStudentForm" method="post" action="">
+                    {% csrf_token %}
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-light flex-grow-1 py-2" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger flex-grow-1 py-2 fw-bold">Delete Permanently</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Shared Logic for Bulk Delete & Row Interactions
+        const selectAll = document.getElementById('selectAll');
+        const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+        const bulkForm = document.getElementById('bulkDeleteForm');
+
+        function updateBulkDeleteVisibility() {
+            const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
+            if (checkedBoxes.length > 0) {
+                bulkDeleteBtn.classList.remove('d-none');
+            } else {
+                bulkDeleteBtn.classList.add('d-none');
+            }
+        }
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('.student-checkbox');
+                checkboxes.forEach(cb => cb.checked = selectAll.checked);
+                updateBulkDeleteVisibility();
+            });
+        }
+
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('student-checkbox')) {
+                updateBulkDeleteVisibility();
+                const all = document.querySelectorAll('.student-checkbox');
+                const checked = document.querySelectorAll('.student-checkbox:checked');
+                selectAll.checked = (all.length === checked.length);
+            }
+        });
+
+        window.confirmBulkDelete = function() {
+            const count = document.querySelectorAll('.student-checkbox:checked').length;
+            if (confirm(`Are you sure you want to delete ${count} selected records?`)) {
+                bulkForm.submit();
+            }
+        };
+
+        // Edit Form Submission
+        const editForm = document.getElementById('editStudentForm');
+        editForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(editForm);
+            fetch(editForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') { window.location.reload(); }
+                else {
+                    document.querySelectorAll('.edit-error').forEach(el => el.remove());
+                    for (const [field, error] of Object.entries(data.errors)) {
+                        const input = document.getElementsByName(field)[0];
+                        if (input) {
+                            const errorDiv = document.createElement('div');
+                            errorDiv.className = 'text-danger x-small edit-error mt-1';
+                            errorDiv.innerHTML = `<i class="fas fa-info-circle me-1"></i> ${error}`;
+                            input.parentNode.appendChild(errorDiv);
+                        }
+                    }
+                }
+            });
+        });
+
+        // Event Delegation
+        document.addEventListener('click', function(e) {
+            const editBtn = e.target.closest('.edit-btn');
+            const deleteBtn = e.target.closest('.delete-btn');
+
+            if (editBtn) {
+                const id = editBtn.dataset.id;
+                const form = document.getElementById('editStudentForm');
+                form.action = `/edit/${id}/`;
+                document.getElementById('edit_name').value = editBtn.dataset.name;
+                document.getElementById('edit_email').value = editBtn.dataset.email;
+                document.getElementById('edit_mobile').value = editBtn.dataset.mobile;
+                document.getElementById('edit_whatsapp').value = editBtn.dataset.whatsapp;
+                document.getElementById('edit_degree').value = editBtn.dataset.degree;
+                document.getElementById('edit_department').value = editBtn.dataset.department;
+                document.getElementById('edit_year').value = editBtn.dataset.year;
+            }
+
+            if (deleteBtn) {
+                const id = deleteBtn.dataset.id;
+                const form = document.getElementById('deleteStudentForm');
+                form.action = `/delete/${id}/`;
+                document.getElementById('delete_student_name').innerText = deleteBtn.dataset.name;
+            }
+        });
+    });
+</script>
+{% endblock %}

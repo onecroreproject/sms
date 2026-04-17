@@ -151,7 +151,19 @@ body {
 .custom-table tbody td {
     padding: 1.1rem 1.25rem;
     color: var(--text-main);
-    border-bottom: 1px solid var(--border-light);
+    border: 1px solid var(--border-light);
+}
+
+.custom-table thead th {
+    border: 1px solid var(--border-light);
+}
+
+/* Excel Sheet Style */
+.excel-mode {
+    border: 1px solid var(--border-medium) !important;
+}
+.excel-mode th, .excel-mode td {
+    border: 1px solid var(--border-medium) !important;
 }
 
 /* Avatar Boxes */

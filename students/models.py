@@ -3,9 +3,9 @@ from django.utils import timezone
 
 class Student(models.Model):
     name = models.CharField(max_length=255)
-    email = models.EmailField(unique=True)
-    mobile = models.CharField(max_length=15, unique=True)
-    whatsapp = models.CharField(max_length=15, unique=True)
+    email = models.EmailField()
+    mobile = models.CharField(max_length=15)
+    whatsapp = models.CharField(max_length=15)
     degree = models.CharField(max_length=100)
     department = models.CharField(max_length=100)
     passed_out_year = models.IntegerField()

@@ -47,10 +47,19 @@ def dashboard(request):
     if year_filter:
         queryset = queryset.filter(passed_out_year=year_filter)
 
-    # Summary Stats
-    total_students = Student.objects.count()
+    # Summary Stats (Based on filtered queryset as per user request)
+    total_students = queryset.count()
     today = timezone.now().date()
-    today_added = Student.objects.filter(created_at__date=today).count()
+    today_added = queryset.filter(created_at__date=today).count()
+
+    # Duplicates Logic (Always check all students for duplicates)
+    from django.db.models import Count
+    duplicate_emails = Student.objects.values('email').annotate(c=Count('email')).filter(c__gt=1).values_list('email', flat=True)
+    duplicate_mobiles = Student.objects.values('mobile').annotate(c=Count('mobile')).filter(c__gt=1).values_list('mobile', flat=True)
+    
+    # We want to show the total number of records that are duplicates
+    duplicate_records = Student.objects.filter(Q(email__in=duplicate_emails) | Q(mobile__in=duplicate_mobiles))
+    duplicate_count = duplicate_records.count()
 
     # Pagination
     paginator = Paginator(queryset, 10) # 10 records per page
@@ -69,6 +78,7 @@ def dashboard(request):
         'students': page_obj,
         'total_students': total_students,
         'today_added': today_added,
+        'duplicate_count': duplicate_count,
         'degrees': degrees,
         'departments': departments,
         'years': years,
@@ -140,6 +150,29 @@ def student_delete(request, pk):
         messages.success(request, 'Student record deleted successfully!')
     return redirect('dashboard')
 
+def bulk_delete(request):
+    if request.method == 'POST':
+        student_ids = request.POST.getlist('student_ids')
+        if student_ids:
+            Student.objects.filter(id__in=student_ids).delete()
+            messages.success(request, f'Successfully deleted {len(student_ids)} student records.')
+        else:
+            messages.warning(request, 'No students were selected for deletion.')
+    return redirect('dashboard')
+
+def duplicate_list(request):
+    from django.db.models import Count
+    duplicate_emails = Student.objects.values('email').annotate(c=Count('email')).filter(c__gt=1).values_list('email', flat=True)
+    duplicate_mobiles = Student.objects.values('mobile').annotate(c=Count('mobile')).filter(c__gt=1).values_list('mobile', flat=True)
+    
+    queryset = Student.objects.filter(Q(email__in=duplicate_emails) | Q(mobile__in=duplicate_mobiles)).order_by('email', 'mobile')
+    
+    context = {
+        'students': queryset,
+        'is_duplicate_view': True,
+    }
+    return render(request, 'students/duplicates.html', context)
+
 def import_students(request):
     if request.method == 'GET':
         return render(request, 'students/import_students.html')
@@ -198,12 +231,7 @@ def import_students(request):
                         errors.append(f"Row {index}: Missing Name or Email.")
                         continue
 
-                    if Student.objects.filter(email=email).exists():
-                        errors.append(f"Row {index}: Email {email} already exists.")
-                        continue
-                    if Student.objects.filter(mobile=mobile).exists():
-                        errors.append(f"Row {index}: Mobile {mobile} already exists.")
-                        continue
+
                     
                     Student.objects.create(
                         name=name,

@@ -10,4 +10,6 @@ urlpatterns = [
     path('import/', views.import_students, name='import_students'),
     path('export/excel/', views.export_students_excel, name='export_excel'),
     path('export/pdf/', views.export_students_pdf, name='export_pdf'),
+    path('bulk-delete/', views.bulk_delete, name='bulk_delete'),
+    path('duplicates/', views.duplicate_list, name='duplicates'),
 ]
