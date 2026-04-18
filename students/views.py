@@ -3,7 +3,12 @@ from django.contrib import messages
 from django.db.models import Q, Case, When, Value, IntegerField
 from django.core.paginator import Paginator
 from django.utils import timezone
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from django.contrib.auth.decorators import login_required
+from django.conf import settings
+from django.core.mail import send_mail
+import random
 from .models import Student
 from .forms import StudentForm
 import datetime
@@ -13,6 +18,7 @@ from reportlab.lib.pagesizes import letter, landscape
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 
+@login_required
 def dashboard(request):
     queryset = Student.objects.all()
     
@@ -61,6 +67,18 @@ def dashboard(request):
     duplicate_records = Student.objects.filter(Q(email__in=duplicate_emails) | Q(mobile__in=duplicate_mobiles))
     duplicate_count = duplicate_records.count()
 
+    # Missing Data Logic
+    missing_data_records = Student.objects.filter(
+        Q(name__isnull=True) | Q(name="") |
+        Q(email__isnull=True) | Q(email="") |
+        Q(mobile__isnull=True) | Q(mobile="") |
+        Q(whatsapp__isnull=True) | Q(whatsapp="") |
+        Q(degree__isnull=True) | Q(degree="") |
+        Q(department__isnull=True) | Q(department="") |
+        Q(passed_out_year__isnull=True)
+    )
+    missing_data_count = missing_data_records.count()
+
     # Pagination
     paginator = Paginator(queryset, 10) # 10 records per page
     page_number = request.GET.get('page')
@@ -79,6 +97,7 @@ def dashboard(request):
         'total_students': total_students,
         'today_added': today_added,
         'duplicate_count': duplicate_count,
+        'missing_data_count': missing_data_count,
         'degrees': degrees,
         'departments': departments,
         'years': years,
@@ -289,29 +308,131 @@ def export_students_pdf(request):
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="Students_{datetime.date.today()}.pdf"'
     
-    doc = SimpleDocTemplate(response, pagesize=landscape(letter))
+    doc = SimpleDocTemplate(response, pagesize=landscape(letter), leftMargin=20, rightMargin=20, topMargin=20, bottomMargin=20)
     elements = []
     
     data = [['NAME', 'EMAIL', 'MOBILE', 'WHATSAPP', 'DEGREE', 'DEPT', 'YEAR']]
     students = Student.objects.all()
     for s in students:
-        data.append([s.name, s.email, s.mobile, s.whatsapp, s.degree, s.department, str(s.passed_out_year)])
+        data.append([
+            str(s.name or ''),
+            str(s.email or ''),
+            str(s.mobile or ''),
+            str(s.whatsapp or ''),
+            str(s.degree or ''),
+            str(s.department or ''),
+            str(s.passed_out_year or '')
+        ])
         
     # Adjust colWidths for 7 columns to fit properly on landscape page
-    table = Table(data, hAlign='LEFT', colWidths=[130, 160, 90, 90, 80, 80, 60])
+    table = Table(data, hAlign='LEFT', colWidths=[150, 180, 90, 90, 80, 80, 50])
     table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3b82f6')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#D9E1F2')), # Excel Light Blue Header
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('LEFTPADDING', (0, 0), (-1, -1), 10),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f8fafc')),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0'))
+        ('FONTSIZE', (0, 1), (-1, -1), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black), # Thicker black grid for both vertical & horizontal
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('LEFTPADDING', (0, 0), (-1, -1), 5),
     ]))
     
     elements.append(table)
     doc.build(elements)
     return response
+
+# --- Auth & OTP Views ---
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            # Generate OTP
+            otp = str(random.randint(100000, 999999))
+            request.session['otp'] = otp
+            request.session['otp_user_id'] = user.id
+            request.session['otp_expiry'] = (timezone.now() + datetime.timedelta(minutes=5)).isoformat()
+            
+            # Send OTP to ADMIN_EMAIL
+            try:
+                send_mail(
+                    'Login OTP Verification',
+                    f'A login attempt was made for user: {username}. The OTP is: {otp}',
+                    settings.DEFAULT_FROM_EMAIL,
+                    [settings.ADMIN_EMAIL],
+                    fail_silently=False,
+                )
+                messages.info(request, f'An OTP has been sent to the administrator ({settings.ADMIN_EMAIL}). Please enter it to continue.')
+                return redirect('verify_otp')
+            except Exception as e:
+                # If console backend is used, it won't fail normally, but for SMTP it might
+                messages.error(request, f'Error sending OTP: {str(e)}')
+        else:
+            messages.error(request, 'Invalid username or password.')
+            
+    return render(request, 'students/login.html')
+
+def verify_otp(request):
+    if request.method == 'POST':
+        entered_otp = request.POST.get('otp')
+        session_otp = request.session.get('otp')
+        user_id = request.session.get('otp_user_id')
+        expiry_str = request.session.get('otp_expiry')
+        
+        if not session_otp or not user_id:
+            messages.error(request, 'Session expired or invalid. Please login again.')
+            return redirect('login')
+            
+        expiry = timezone.datetime.fromisoformat(expiry_str)
+        if timezone.now() > expiry:
+            messages.error(request, 'OTP expired. Please login again.')
+            return redirect('login')
+            
+        if entered_otp == session_otp:
+            from django.contrib.auth.models import User
+            user = User.objects.get(id=user_id)
+            auth_login(request, user)
+            
+            # Clear session
+            del request.session['otp']
+            del request.session['otp_user_id']
+            del request.session['otp_expiry']
+            
+            return redirect('dashboard')
+        else:
+            messages.error(request, 'Invalid OTP. Please try again.')
+            
+    return render(request, 'students/verify_otp.html')
+
+def logout_view(request):
+    auth_logout(request)
+    return redirect('login')
+
+# --- Missing Data Views ---
+
+@login_required
+def missing_data_list(request):
+    queryset = Student.objects.filter(
+        Q(name__isnull=True) | Q(name="") |
+        Q(email__isnull=True) | Q(email="") |
+        Q(mobile__isnull=True) | Q(mobile="") |
+        Q(whatsapp__isnull=True) | Q(whatsapp="") |
+        Q(degree__isnull=True) | Q(degree="") |
+        Q(department__isnull=True) | Q(department="") |
+        Q(passed_out_year__isnull=True)
+    )
+    
+    context = {
+        'students': queryset,
+        'title': 'Incomplete Records',
+    }
+    return render(request, 'students/missing_data.html', context)

@@ -12,4 +12,8 @@ urlpatterns = [
     path('export/pdf/', views.export_students_pdf, name='export_pdf'),
     path('bulk-delete/', views.bulk_delete, name='bulk_delete'),
     path('duplicates/', views.duplicate_list, name='duplicates'),
+    path('missing-data/', views.missing_data_list, name='missing_data'),
+    path('login/', views.login_view, name='login'),
+    path('verify-otp/', views.verify_otp, name='verify_otp'),
+    path('logout/', views.logout_view, name='logout'),
 ]

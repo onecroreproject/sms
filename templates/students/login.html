@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="col-12 col-md-5 col-lg-4">
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="card-header bg-primary py-4 text-center border-0">
+                <div class="icon-box bg-white text-primary rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                    <i class="fas fa-user-shield fa-2x"></i>
+                </div>
+                <h4 class="text-white fw-bold mb-0">Staff Login</h4>
+                <p class="text-white-50 small mb-0">Enter your credentials to access the dashboard</p>
+            </div>
+            <div class="card-body p-4 p-lg-5">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show small" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted x-small mb-1">USERNAME</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-0 text-muted"><i class="fas fa-user"></i></span>
+                            <input type="text" name="username" class="form-control bg-light border-0 py-2" placeholder="Enter username" required>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-muted x-small mb-1">PASSWORD</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-0 text-muted"><i class="fas fa-lock"></i></span>
+                            <input type="password" name="password" class="form-control bg-light border-0 py-2" placeholder="Enter password" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm rounded-3">
+                        LOGIN <i class="fas fa-arrow-right ms-2"></i>
+                    </button>
+                </form>
+            </div>
+            <div class="card-footer bg-light border-0 py-3 text-center">
+                <span class="text-muted small">Protected by OTP verification</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

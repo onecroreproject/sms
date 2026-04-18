@@ -161,11 +161,17 @@ body {
 
 /* Excel Sheet Style Class */
 .excel-mode {
-    border: 1px solid #94a3b8 !important;
+    border: 2px solid #94a3b8 !important; /* Thicker outer border */
     border-collapse: collapse !important;
 }
 .excel-mode th, .excel-mode td {
-    border: 1px solid #cbd5e1 !important;
+    border: 1px solid #cbd5e1 !important; /* Both vertical and horizontal lines */
+    padding: 0.6rem 0.8rem !important;
+}
+.excel-mode thead th {
+    background-color: #f1f5f9 !important;
+    color: #334155 !important;
+    border-bottom: 2px solid #94a3b8 !important;
 }
 
 /* Avatar Boxes */

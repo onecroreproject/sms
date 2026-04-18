@@ -3,7 +3,7 @@
 {% block content %}
 <div class="row g-3 mb-4">
     <!-- Stat Card: Total Students -->
-    <div class="col-12 col-md-4">
+    <div class="col-12 col-md-6 col-lg-3">
         <div class="card stat-card shadow-sm h-100 border-0 bg-white">
             <div class="card-body">
                 <div class="d-flex align-items-center mb-2">
@@ -14,9 +14,6 @@
                 </div>
                 <div class="d-flex align-items-baseline">
                     <h3 class="fw-bold text-dark mb-0">{{ total_students }}</h3>
-                    <span class="ms-2 text-success x-small fw-semibold">
-                        <i class="fas fa-database me-1"></i> Active
-                    </span>
                 </div>
             </div>
             <div class="progress rounded-0" style="height: 3px;">
@@ -25,7 +22,7 @@
         </div>
     </div>
     <!-- Stat Card: Added Today -->
-    <div class="col-12 col-md-4">
+    <div class="col-12 col-md-6 col-lg-3">
         <div class="card stat-card shadow-sm h-100 border-0 bg-white">
             <div class="card-body">
                 <div class="d-flex align-items-center mb-2">
@@ -36,7 +33,6 @@
                 </div>
                 <div class="d-flex align-items-baseline">
                     <h3 class="fw-bold text-dark mb-0">{{ today_added }}</h3>
-                    <span class="ms-2 text-muted x-small">New entries</span>
                 </div>
             </div>
             <div class="progress rounded-0" style="height: 3px;">
@@ -45,7 +41,7 @@
         </div>
     </div>
     <!-- Stat Card: Duplicate Records -->
-    <div class="col-12 col-md-4">
+    <div class="col-12 col-md-6 col-lg-3">
         <a href="{% url 'duplicates' %}" class="text-decoration-none">
             <div class="card stat-card shadow-sm h-100 border-0 bg-white">
                 <div class="card-body">
@@ -53,17 +49,35 @@
                         <div class="icon-box bg-danger-soft text-danger rounded-circle me-3 d-flex align-items-center justify-content-center">
                             <i class="fas fa-copy"></i>
                         </div>
-                        <h6 class="text-muted fw-bold text-uppercase small tracking-wider mb-0">Duplicate Records</h6>
+                        <h6 class="text-muted fw-bold text-uppercase small tracking-wider mb-0">Duplicates</h6>
                     </div>
                     <div class="d-flex align-items-baseline">
                         <h3 class="fw-bold text-dark mb-0">{{ duplicate_count }}</h3>
-                        <span class="ms-2 text-danger x-small fw-semibold">
-                            <i class="fas fa-exclamation-circle me-1"></i> Review Required
-                        </span>
                     </div>
                 </div>
                 <div class="progress rounded-0" style="height: 3px;">
                     <div class="progress-bar bg-danger" style="width: {% if total_students > 0 %}{% widthratio duplicate_count total_students 100 %}{% else %}0{% endif %}%"></div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <!-- Stat Card: Incomplete Records -->
+    <div class="col-12 col-md-6 col-lg-3">
+        <a href="{% url 'missing_data' %}" class="text-decoration-none">
+            <div class="card stat-card shadow-sm h-100 border-0 bg-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="icon-box bg-warning-soft text-warning rounded-circle me-3 d-flex align-items-center justify-content-center">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h6 class="text-muted fw-bold text-uppercase small tracking-wider mb-0">Missing Data</h6>
+                    </div>
+                    <div class="d-flex align-items-baseline">
+                        <h3 class="fw-bold text-dark mb-0">{{ missing_data_count }}</h3>
+                    </div>
+                </div>
+                <div class="progress rounded-0" style="height: 3px;">
+                    <div class="progress-bar bg-warning" style="width: {% if total_students > 0 %}{% widthratio missing_data_count total_students 100 %}{% else %}0{% endif %}%"></div>
                 </div>
             </div>
         </a>
@@ -121,6 +135,9 @@
     <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
         <h6 class="mb-0 fw-bold text-dark">Student Directory</h6>
         <div class="d-flex gap-2">
+            <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                <i class="fas fa-sign-out-alt me-1"></i> Logout
+            </a>
             <button type="button" id="bulkDeleteBtn" class="btn btn-danger btn-sm rounded-pill px-3 d-none" onclick="confirmBulkDelete()">
                 <i class="fas fa-trash-alt me-1"></i> Bulk Delete
             </button>
@@ -192,16 +209,16 @@
                         <div class="btn-group btn-group-sm border rounded">
                             <button type="button" class="btn btn-white border-0 text-primary py-1 px-2 edit-btn" 
                                     data-bs-toggle="modal" data-bs-target="#editStudentModal"
-                                    data-id="{{ student.id }}" data-name="{{ student.name }}" 
-                                    data-email="{{ student.email }}"
-                                    data-mobile="{{ student.mobile }}" data-whatsapp="{{ student.whatsapp }}"
-                                    data-degree="{{ student.degree }}" data-department="{{ student.department }}"
-                                    data-year="{{ student.passed_out_year }}">
+                                    data-id="{{ student.id }}" data-name="{{ student.name|default:'' }}" 
+                                    data-email="{{ student.email|default:'' }}"
+                                    data-mobile="{{ student.mobile|default:'' }}" data-whatsapp="{{ student.whatsapp|default:'' }}"
+                                    data-degree="{{ student.degree|default:'' }}" data-department="{{ student.department|default:'' }}"
+                                    data-year="{{ student.passed_out_year|default:'' }}">
                                 <i class="fas fa-edit"></i>
                             </button>
                             <button type="button" class="btn btn-white border-0 text-danger py-1 px-2 delete-btn"
                                     data-bs-toggle="modal" data-bs-target="#deleteStudentModal"
-                                    data-id="{{ student.id }}" data-name="{{ student.name }}">
+                                    data-id="{{ student.id }}" data-name="{{ student.name|default:'' }}">
                                 <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>
@@ -284,31 +301,31 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-muted x-small mb-1">FULL NAME</label>
-                            <input type="text" name="name" id="edit_name" class="form-control form-control-sm border-0 bg-light" required>
+                            <input type="text" name="name" id="edit_name" class="form-control form-control-sm border-0 bg-light">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-muted x-small mb-1">EMAIL ADDRESS</label>
-                            <input type="email" name="email" id="edit_email" class="form-control form-control-sm border-0 bg-light" required>
+                            <input type="email" name="email" id="edit_email" class="form-control form-control-sm border-0 bg-light">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-muted x-small mb-1">MOBILE</label>
-                            <input type="text" name="mobile" id="edit_mobile" class="form-control form-control-sm border-0 bg-light" required>
+                            <input type="text" name="mobile" id="edit_mobile" class="form-control form-control-sm border-0 bg-light">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-muted x-small mb-1">WHATSAPP</label>
-                            <input type="text" name="whatsapp" id="edit_whatsapp" class="form-control form-control-sm border-0 bg-light" required>
+                            <input type="text" name="whatsapp" id="edit_whatsapp" class="form-control form-control-sm border-0 bg-light">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-muted x-small mb-1">DEGREE</label>
-                            <input type="text" name="degree" id="edit_degree" class="form-control form-control-sm border-0 bg-light" required>
+                            <input type="text" name="degree" id="edit_degree" class="form-control form-control-sm border-0 bg-light">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-muted x-small mb-1">DEPARTMENT</label>
-                            <input type="text" name="department" id="edit_department" class="form-control form-control-sm border-0 bg-light" required>
+                            <input type="text" name="department" id="edit_department" class="form-control form-control-sm border-0 bg-light">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-muted x-small mb-1">PASS OUT YEAR</label>
-                            <input type="number" name="passed_out_year" id="edit_year" class="form-control form-control-sm border-0 bg-light" required>
+                            <input type="number" name="passed_out_year" id="edit_year" class="form-control form-control-sm border-0 bg-light">
                         </div>
                     </div>
                     <div class="mt-4 pt-2 d-flex gap-2">
@@ -488,13 +505,18 @@
                 // Clear previous errors
                 document.querySelectorAll('.edit-error').forEach(el => el.remove());
 
-                document.getElementById('edit_name').value = editBtn.dataset.name;
-                document.getElementById('edit_email').value = editBtn.dataset.email;
-                document.getElementById('edit_mobile').value = editBtn.dataset.mobile;
-                document.getElementById('edit_whatsapp').value = editBtn.dataset.whatsapp;
-                document.getElementById('edit_degree').value = editBtn.dataset.degree;
-                document.getElementById('edit_department').value = editBtn.dataset.department;
-                document.getElementById('edit_year').value = editBtn.dataset.year;
+                const setVal = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = (val === 'None' || !val) ? '' : val;
+                };
+
+                setVal('edit_name', editBtn.dataset.name);
+                setVal('edit_email', editBtn.dataset.email);
+                setVal('edit_mobile', editBtn.dataset.mobile);
+                setVal('edit_whatsapp', editBtn.dataset.whatsapp);
+                setVal('edit_degree', editBtn.dataset.degree);
+                setVal('edit_department', editBtn.dataset.department);
+                setVal('edit_year', editBtn.dataset.year);
             }
 
             if (deleteBtn) {
