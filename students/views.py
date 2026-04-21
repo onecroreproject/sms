@@ -33,7 +33,7 @@ def dashboard(request):
             search_priority=Case(
                 When(name__icontains=search_query, then=Value(3)),
                 When(Q(mobile__icontains=search_query) | Q(whatsapp__icontains=search_query), then=Value(2)),
-                When(Q(degree__icontains=search_query) | Q(department__icontains=search_query) | Q(passed_out_year__icontains=search_query), then=Value(1)),
+                When(Q(degree__icontains=search_query) | Q(department__icontains=search_query) | Q(passed_out_year__icontains=search_query) | Q(college_name__icontains=search_query), then=Value(1)),
                 default=Value(0),
                 output_field=IntegerField(),
             )
@@ -75,7 +75,8 @@ def dashboard(request):
         Q(whatsapp__isnull=True) | Q(whatsapp="") |
         Q(degree__isnull=True) | Q(degree="") |
         Q(department__isnull=True) | Q(department="") |
-        Q(passed_out_year__isnull=True)
+        Q(passed_out_year__isnull=True) |
+        Q(college_name__isnull=True) | Q(college_name="")
     )
     missing_data_count = missing_data_records.count()
 
@@ -230,6 +231,7 @@ def import_students(request):
             idx_degree = get_idx('degree')
             idx_dept = get_idx('dept') or get_idx('department')
             idx_year = get_idx('year') or get_idx('passed out year')
+            idx_college = get_idx('college') or get_idx('college name')
 
             count = 0
             errors = []
@@ -245,6 +247,7 @@ def import_students(request):
                     degree = str(row[idx_degree]) if idx_degree != -1 and row[idx_degree] else ""
                     department = str(row[idx_dept]) if idx_dept != -1 and row[idx_dept] else ""
                     year = row[idx_year] if idx_year != -1 and row[idx_year] else 0
+                    college = str(row[idx_college]) if idx_college != -1 and row[idx_college] else ""
                     
                     if not name or not email:
                         errors.append(f"Row {index}: Missing Name or Email.")
@@ -259,7 +262,8 @@ def import_students(request):
                         whatsapp=whatsapp,
                         degree=degree,
                         department=department,
-                        passed_out_year=int(year) if year else 0
+                        passed_out_year=int(year) if year else 0,
+                        college_name=college
                     )
                     count += 1
                 except Exception as row_error:
@@ -285,7 +289,7 @@ def export_students_excel(request):
     ws.title = "Students"
     
     # Header
-    columns = ['Name', 'Email', 'Mobile', 'WhatsApp', 'Degree', 'Department', 'Passed Out Year']
+    columns = ['Name', 'Email', 'Mobile', 'WhatsApp', 'Degree', 'Department', 'Passed Out Year', 'College Name']
     ws.append(columns)
     
     # Data
@@ -298,7 +302,8 @@ def export_students_excel(request):
             student.whatsapp,
             student.degree,
             student.department,
-            student.passed_out_year
+            student.passed_out_year,
+            student.college_name
         ])
         
     wb.save(response)
@@ -311,7 +316,7 @@ def export_students_pdf(request):
     doc = SimpleDocTemplate(response, pagesize=landscape(letter), leftMargin=20, rightMargin=20, topMargin=20, bottomMargin=20)
     elements = []
     
-    data = [['NAME', 'EMAIL', 'MOBILE', 'WHATSAPP', 'DEGREE', 'DEPT', 'YEAR']]
+    data = [['NAME', 'EMAIL', 'MOBILE', 'WHATSAPP', 'DEGREE', 'DEPT', 'YEAR', 'COLLEGE']]
     students = Student.objects.all()
     for s in students:
         data.append([
@@ -321,11 +326,12 @@ def export_students_pdf(request):
             str(s.whatsapp or ''),
             str(s.degree or ''),
             str(s.department or ''),
-            str(s.passed_out_year or '')
+            str(s.passed_out_year or ''),
+            str(s.college_name or '')
         ])
         
-    # Adjust colWidths for 7 columns to fit properly on landscape page
-    table = Table(data, hAlign='LEFT', colWidths=[150, 180, 90, 90, 80, 80, 50])
+    # Adjust colWidths for 8 columns to fit properly on landscape page
+    table = Table(data, hAlign='LEFT', colWidths=[120, 150, 80, 80, 70, 70, 40, 150])
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#D9E1F2')), # Excel Light Blue Header
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
@@ -428,7 +434,8 @@ def missing_data_list(request):
         Q(whatsapp__isnull=True) | Q(whatsapp="") |
         Q(degree__isnull=True) | Q(degree="") |
         Q(department__isnull=True) | Q(department="") |
-        Q(passed_out_year__isnull=True)
+        Q(passed_out_year__isnull=True) |
+        Q(college_name__isnull=True) | Q(college_name="")
     )
     
     context = {

@@ -10,6 +10,7 @@ class Student(models.Model):
     department = models.CharField(max_length=100, null=True, blank=True)
     passed_out_year = models.IntegerField(null=True, blank=True)
     form_name = models.CharField(max_length=255, null=True, blank=True)
+    college_name = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

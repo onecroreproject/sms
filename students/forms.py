@@ -6,7 +6,7 @@ import re
 class StudentForm(forms.ModelForm):
     class Meta:
         model = Student
-        fields = ['name', 'email', 'mobile', 'whatsapp', 'degree', 'department', 'passed_out_year', 'form_name']
+        fields = ['name', 'email', 'mobile', 'whatsapp', 'degree', 'department', 'passed_out_year', 'college_name', 'form_name']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Full Name'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Enter Email Address'}),
@@ -15,6 +15,7 @@ class StudentForm(forms.ModelForm):
             'degree': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Degree (e.g. B.E)'}),
             'department': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Department (e.g. CSE)'}),
             'passed_out_year': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter Passing Year'}),
+            'college_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter College Name'}),
             'form_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Form Name'}),
         }
 

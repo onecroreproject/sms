@@ -101,7 +101,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'rolex123rolexeee@gmail.com'
 EMAIL_HOST_PASSWORD = 'jdqishnwjadgfmts'
 DEFAULT_FROM_EMAIL = 'Student Management <rolex123rolexeee@gmail.com>'
-ADMIN_EMAIL = '1croreprojects@gmail.com' # OTP will be sent here
+ADMIN_EMAIL = 'bala2772003@gmail.com' # OTP will be sent here
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
